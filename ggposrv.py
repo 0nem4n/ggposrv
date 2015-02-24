@@ -991,7 +991,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		for spectator in quarkobject.spectators:
 			spectator.send_queue.append(response)
-
+			
 		# increment realtime views on db
 		dbfile = os.path.join(os.path.realpath(os.path.dirname(sys.argv[0])),'db', 'ggposrv.sqlite3')
 		conn = sqlite3.connect(dbfile)
@@ -1000,6 +1000,10 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		cursor.execute(sql, [quark])
 		conn.commit()
 		conn.close()
+		
+		# update client spectators
+		params = 2,0,quarkobject.spectators
+		self.handle_status(params)
 
 	def spectator_leave(self, quark):
 
@@ -1344,7 +1348,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 	def handle_status(self, params):
 
-		status,sequence = params
+		status,sequence,spectators = params
 
 		# send ack to the client
 		if (sequence >4):
@@ -1393,6 +1397,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				pdu2+=self.sizepad(client.cc)
 				pdu2+=self.sizepad(client.country)
 				pdu2+=self.pad2hex(client.port)
+				
+				for spectator in spectators:#Add spectators list to pdu
+					pdu2+=self.pad2hex(spectators.nick)
 
 			# fix for crappy routers that change their own public ip address to something else
 			pdu1='\x00\x00\x00\x01'
