@@ -65,7 +65,7 @@ except:
 
 VERSION=18
 
-MIN_CLIENT_VERSION=34
+MIN_CLIENT_VERSION=0#34
 
 class GGPOHttpHandler(BaseHTTPRequestHandler):
 
@@ -793,7 +793,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			myself=self.get_myclient_from_quark(quark)
 			myself.previous_status=myself.status
 			myself.status=2
-			params = 2,0
+			params = 2,0,0
 			myself.handle_status(params)
 
 	def handle_getpeer(self, params):
@@ -1026,6 +1026,11 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 
 		for spectator in quarkobject.spectators:
 			spectator.send_queue.append(response)
+			
+		# update client spectators
+		params = 2,0,quarkobject.spectators
+		self.handle_status(params)
+		
 
 	def handle_challenge(self, params):
 		nick, channel, sequence = params
@@ -1398,8 +1403,9 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				pdu2+=self.sizepad(client.country)
 				pdu2+=self.pad2hex(client.port)
 				
-				for spectator in spectators:#Add spectators list to pdu
-					pdu2+=self.pad2hex(spectators.nick)
+				if (spectators!=0):
+					for spectator in spectators:#Add spectators list to pdu
+						pdu2+=self.pad2hex(spectator.nick)
 
 			# fix for crappy routers that change their own public ip address to something else
 			pdu1='\x00\x00\x00\x01'
@@ -1524,7 +1530,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 		logging.debug('CONNECITON ESTABLISHED to %s: %r' % (self.client_ident(), response))
 		self.send_queue.append(response)
 
-		params = self.status,0
+		params = self.status,0,0
 		self.handle_status(params)
 
 	def handle_privmsg(self, params):
@@ -1700,7 +1706,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 			else:
 				myself.status=0
 			myself.previous_status=None
-			params = myself.status,0
+			params = myself.status,0,0
 			myself.handle_status(params)
 
 			try:
@@ -1723,7 +1729,7 @@ class GGPOClient(SocketServer.BaseRequestHandler):
 				else:
 					mypeer.status=0
 				mypeer.previous_status=None
-				params = mypeer.status,0
+				params = mypeer.status,0,0
 				mypeer.handle_status(params)
 
 				# if connection didn't succeed, send the warning message to both peers
